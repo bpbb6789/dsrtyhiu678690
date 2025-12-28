@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import { Router, Switch, Route, useLocation } from "wouter";
 import { apiRequest, queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import { EventsSearchProvider } from "./context/EventsSearchContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from "react";
 import { initializeFCM } from "@/services/pushNotificationService";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";

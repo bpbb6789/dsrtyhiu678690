@@ -1496,7 +1496,11 @@ export async function registerRoutes(app: Express, upload?: any): Promise<Server
   app.get('/api/challenges', PrivyAuthMiddleware, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user.claims.sub;
-      const challenges = await storage.getChallenges(userId);
+      // Check if requesting all challenges (public feed) or user-specific challenges
+      const feedType = req.query.feed as string;
+      const challenges = feedType === 'all' 
+        ? await storage.getAllChallengesFeed(100)
+        : await storage.getChallenges(userId);
       res.json(challenges);
     } catch (error) {
       console.error("Error fetching challenges:", error);
@@ -4331,11 +4335,56 @@ export async function registerRoutes(app: Express, upload?: any): Promise<Server
     }
   });
 
-  // Update challenge (title, description, visibility, etc.)
+  // Get all escrow data and statistics
+  app.get('/api/admin/escrow', adminAuth, async (req: AdminAuthRequest, res) => {
+    try {
+      const challenges = await storage.getAllEscrowData(100);
+      const stats = await storage.getEscrowStats();
+      res.json({
+        stats,
+        challenges
+      });
+    } catch (error) {
+      console.error('Error fetching escrow data:', error);
+      res.status(500).json({ message: 'Failed to fetch escrow data' });
+    }
+  });
+
+  // Get escrow statistics summary
+  app.get('/api/admin/escrow/stats', adminAuth, async (req: AdminAuthRequest, res) => {
+    try {
+      const stats = await storage.getEscrowStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching escrow stats:', error);
+      res.status(500).json({ message: 'Failed to fetch escrow stats' });
+    }
+  });
+
+  // Update challenge (admin editable fields at any time)
   app.put('/api/admin/challenges/:id', adminAuth, async (req: AdminAuthRequest, res) => {
     try {
       const challengeId = parseInt(req.params.id);
-      const { title, description, isVisible, endDate } = req.body;
+      const {
+        title,
+        description,
+        isVisible,
+        endDate,
+        coverImageUrl,
+        category,
+        amount,
+        status,
+        bonusSide,
+        bonusAmount,
+        bonusMultiplier,
+        bonusEndsAt,
+        earlyBirdSlots,
+        earlyBirdBonus,
+        streakBonusEnabled,
+        convictionBonusEnabled,
+        firstTimeBonusEnabled,
+        socialTagBonus,
+      } = req.body;
 
       // Build update object - only update provided fields
       const updates: any = {};
@@ -4343,6 +4392,24 @@ export async function registerRoutes(app: Express, upload?: any): Promise<Server
       if (description !== undefined) updates.description = description;
       if (isVisible !== undefined) updates.isVisible = isVisible;
       if (endDate !== undefined) updates.dueDate = endDate ? new Date(endDate) : null;
+      if (coverImageUrl !== undefined) updates.coverImageUrl = coverImageUrl;
+      if (category !== undefined) updates.category = category;
+      if (amount !== undefined) updates.amount = String(amount);
+      if (status !== undefined) updates.status = status;
+
+      // Bonus related fields
+      if (bonusSide !== undefined) updates.bonusSide = bonusSide;
+      if (bonusAmount !== undefined) updates.bonusAmount = bonusAmount;
+      if (bonusMultiplier !== undefined) updates.bonusMultiplier = bonusMultiplier;
+      if (bonusEndsAt !== undefined) updates.bonusEndsAt = bonusEndsAt ? new Date(bonusEndsAt) : null;
+
+      // Other optional bonus/feature flags
+      if (earlyBirdSlots !== undefined) updates.earlyBirdSlots = earlyBirdSlots;
+      if (earlyBirdBonus !== undefined) updates.earlyBirdBonus = earlyBirdBonus;
+      if (streakBonusEnabled !== undefined) updates.streakBonusEnabled = streakBonusEnabled;
+      if (convictionBonusEnabled !== undefined) updates.convictionBonusEnabled = convictionBonusEnabled;
+      if (firstTimeBonusEnabled !== undefined) updates.firstTimeBonusEnabled = firstTimeBonusEnabled;
+      if (socialTagBonus !== undefined) updates.socialTagBonus = socialTagBonus;
 
       const updatedChallenge = await storage.updateChallenge(challengeId, updates);
       res.json(updatedChallenge);

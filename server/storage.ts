@@ -144,6 +144,8 @@ export interface IStorage {
   joinAdminChallenge(challengeId: number, userId: string, stake: 'YES' | 'NO'): Promise<Challenge>;
   processChallengePayouts(challengeId: number): Promise<{ winnerPayout: number; platformFee: number; winnerId?: string }>;
   getChallengeEscrowStatus(challengeId: number): Promise<{ totalEscrow: number; status: string } | null>;
+  getAllEscrowData(limit?: number): Promise<(Challenge & { totalEscrow: number; escrowCount: number })[]>;
+  getEscrowStats(): Promise<{ totalEscrow: number; pendingChallenges: number; holdingAmount: number }>;
 
   // Friend operations
   getFriends(userId: string): Promise<(Friend & { requester: User, addressee: User })[]>;
@@ -1093,6 +1095,82 @@ export class DatabaseStorage implements IStorage {
     return challengesWithParticipants;
   }
 
+  // Get all challenges for public feed (no user filtering)
+  async getAllChallengesFeed(limit = 100): Promise<(Challenge & { challengerUser: User, challengedUser: User, participantCount: number })[]> {
+    const challengesList = await this.db
+      .select({
+        id: challenges.id,
+        challenger: challenges.challenger,
+        challenged: challenges.challenged,
+        title: challenges.title,
+        description: challenges.description,
+        category: challenges.category,
+        amount: challenges.amount,
+        status: challenges.status,
+        evidence: challenges.evidence,
+        result: challenges.result,
+        dueDate: challenges.dueDate,
+        createdAt: challenges.createdAt,
+        completedAt: challenges.completedAt,
+        adminCreated: challenges.adminCreated,
+        bonusSide: challenges.bonusSide,
+        bonusMultiplier: challenges.bonusMultiplier,
+        bonusEndsAt: challenges.bonusEndsAt,
+        yesStakeTotal: challenges.yesStakeTotal,
+        noStakeTotal: challenges.noStakeTotal,
+        coverImageUrl: challenges.coverImageUrl,
+        challengerUser: {
+          id: sql`challenger_user.id`,
+          username: sql`challenger_user.username`,
+          firstName: sql`challenger_user.first_name`,
+          lastName: sql`challenger_user.last_name`,
+          profileImageUrl: sql`challenger_user.profile_image_url`,
+        },
+        challengedUser: {
+          id: sql`challenged_user.id`,
+          username: sql`challenged_user.username`,
+          firstName: sql`challenged_user.first_name`,
+          lastName: sql`challenged_user.last_name`,
+          profileImageUrl: sql`challenged_user.profile_image_url`,
+        },
+      })
+      .from(challenges)
+      .leftJoin(sql`users challenger_user`, eq(challenges.challenger, sql`challenger_user.id`))
+      .leftJoin(sql`users challenged_user`, eq(challenges.challenged, sql`challenged_user.id`))
+      .orderBy(desc(challenges.createdAt))
+      .limit(limit) as any;
+
+    // Get participant count for each challenge
+    const challengesWithParticipants = await Promise.all(
+      challengesList.map(async (challenge) => {
+        let participantCount = 0;
+        
+        if (challenge.adminCreated) {
+          const [pairQueueResult] = await this.db
+            .select({ count: count() })
+            .from(pairQueue)
+            .where(eq(pairQueue.challengeId, challenge.id));
+          participantCount = Number(pairQueueResult?.count || 0);
+          if (challenge.challenger) participantCount++;
+          if (challenge.challenged) participantCount++;
+        } else {
+          const [participantResult] = await this.db
+            .select({ count: count() })
+            .from(pairQueue)
+            .where(eq(pairQueue.challengeId, challenge.id));
+          participantCount = participantResult?.count || 0;
+        }
+
+        return {
+          ...challenge,
+          participantCount,
+        };
+      })
+    );
+
+    return challengesWithParticipants;
+  }
+
   async getChallengeById(id: number): Promise<Challenge | undefined> {
     const [challenge] = await this.db
       .select({
@@ -1222,9 +1300,6 @@ export class DatabaseStorage implements IStorage {
       })
       .from(challenges)
       .leftJoin(challengeMessages, eq(challenges.id, challengeMessages.challengeId))
-      .where(
-        and(eq(challenges.adminCreated, true), eq(challenges.status, 'open'))
-      )
       .groupBy(challenges.id)
       .orderBy(desc(challenges.createdAt))
       .limit(limit);
@@ -1764,6 +1839,44 @@ export class DatabaseStorage implements IStorage {
       .groupBy(escrow.status);
 
     return escrowData || null;
+  }
+
+  async getAllEscrowData(limit = 100): Promise<(Challenge & { totalEscrow: number; escrowCount: number })[]> {
+    const results = await this.db
+      .select({
+        challenge: challenges,
+        totalEscrow: sql<number>`COALESCE(SUM(CAST(${escrow.amount} AS DECIMAL)), 0)`,
+        escrowCount: count(escrow.id),
+      })
+      .from(challenges)
+      .leftJoin(escrow, eq(challenges.id, escrow.challengeId))
+      .where(sql`${escrow.id} IS NOT NULL`)
+      .groupBy(challenges.id)
+      .orderBy(desc(challenges.createdAt))
+      .limit(limit);
+
+    return results.map((r: any) => ({
+      ...r.challenge,
+      totalEscrow: Number(r.totalEscrow),
+      escrowCount: Number(r.escrowCount),
+    }));
+  }
+
+  async getEscrowStats(): Promise<{ totalEscrow: number; pendingChallenges: number; holdingAmount: number }> {
+    const stats = await this.db
+      .select({
+        totalEscrow: sql<number>`COALESCE(SUM(CAST(${escrow.amount} AS DECIMAL)), 0)`,
+        holdingAmount: sql<number>`COALESCE(SUM(CASE WHEN ${escrow.status} = 'holding' THEN CAST(${escrow.amount} AS DECIMAL) ELSE 0 END), 0)`,
+        pendingChallenges: count(sql`DISTINCT ${escrow.challengeId}`),
+      })
+      .from(escrow);
+
+    const [result] = stats;
+    return {
+      totalEscrow: Number(result?.totalEscrow) || 0,
+      holdingAmount: Number(result?.holdingAmount) || 0,
+      pendingChallenges: Number(result?.pendingChallenges) || 0,
+    };
   }
 
   // Friend operations

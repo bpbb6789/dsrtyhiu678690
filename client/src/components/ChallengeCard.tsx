@@ -385,6 +385,17 @@ export function ChallengeCard({
                 <Badge className={isNewChallenge ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-none" : "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border-none"}>
                   {isNewChallenge ? "New" : "Open"}
                 </Badge>
+                {!challenge.adminCreated && (
+                  <Badge className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-none">
+                    P2P
+                  </Badge>
+                )}
+                {activeBonuses.length > 0 && (
+                  <Badge className="bg-amber-500 text-white border-none px-2 py-0.5 text-[10px]">
+                    {activeBonuses[0].icon}
+                    <span className="font-bold ml-1">{activeBonuses[0].label}</span>
+                  </Badge>
+                )}
                 <CompactShareButton
                   shareData={challengeShareData.shareData}
                   className="text-primary h-5 w-5 hover:scale-110 transition-transform"
@@ -395,23 +406,9 @@ export function ChallengeCard({
           </div>
         </div>
         
-        {/* Bonus badges row */}
-        {challenge.status === "open" && activeBonuses.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap mb-2">
-            {activeBonuses.map((bonus, idx) => (
-              <Badge
-                key={idx}
-                variant="outline"
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border-none ${
-                  bonus.type === "weak_side" ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
-                }`}
-                title={bonus.description}
-              >
-                {bonus.icon}
-                <span className="font-bold">{bonus.label}</span>
-              </Badge>
-            ))}
-          </div>
+        {/* Bonus badges row (show whenever active bonuses exist) */}
+        {activeBonuses.length > 0 && (
+          {/* removed separate bonus row; bonus badge will be shown inline next to share icon */}
         )}
 
         <div className="mb-1.5">
@@ -420,57 +417,59 @@ export function ChallengeCard({
           </h5>
         </div>
 
-        {challenge.status === "open" && (
-          <div className="flex justify-center mb-2">
-            <div className="flex flex-row items-center justify-center h-9 gap-1 px-8 w-full">
-              {/* Check if user has already joined this challenge */}
-              {(() => {
-                const hasJoined = user?.id === challenge.challenger || user?.id === challenge.challenged;
-                
-                return (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!hasJoined) {
-                          onJoin?.({ ...challenge, selectedSide: "yes" });
-                        }
-                      }}
-                      disabled={hasJoined}
-                      className={`flex items-center justify-center text-base font-bold rounded-2xl px-8 py-2 flex-1 transition-opacity ${
-                        hasJoined
-                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
-                          : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 dark:bg-emerald-500/20 hover:opacity-80'
-                      }`}
-                      title={hasJoined ? "You have already joined this challenge" : ""}
-                      data-testid="button-challenge-yes"
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!hasJoined) {
-                          onJoin?.({ ...challenge, selectedSide: "no" });
-                        }
-                      }}
-                      disabled={hasJoined}
-                      className={`flex items-center justify-center text-base font-bold rounded-2xl px-8 py-2 flex-1 transition-opacity ${
-                        hasJoined
-                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
-                          : 'text-red-600 dark:text-red-400 bg-red-500/15 dark:bg-red-500/20 hover:opacity-80'
-                      }`}
-                      title={hasJoined ? "You have already joined this challenge" : ""}
-                      data-testid="button-challenge-no"
-                    >
-                      No
-                    </button>
-                  </>
-                );
-              })()}
+        {(() => {
+          // Determine if this is a head-to-head match already filled (non-admin)
+          const isHeadToHeadMatched = !challenge.adminCreated && !!challenge.challenger && !!challenge.challenged;
+          const hasJoined = user?.id === challenge.challenger || user?.id === challenge.challenged;
+          const showJoinButtons = challenge.status === "open" && (!isHeadToHeadMatched || hasJoined);
+
+          if (!showJoinButtons) return null;
+
+          return (
+            <div className="flex justify-center mb-2">
+              <div className="flex flex-row items-center justify-center h-9 gap-1 px-8 w-full">
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!hasJoined) {
+                        onJoin?.({ ...challenge, selectedSide: "yes" });
+                      }
+                    }}
+                    disabled={hasJoined}
+                    className={`flex items-center justify-center text-base font-bold rounded-2xl px-8 py-2 flex-1 transition-opacity ${
+                      hasJoined
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
+                        : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 dark:bg-emerald-500/20 hover:opacity-80'
+                    }`}
+                    title={hasJoined ? "You have already joined this challenge" : ""}
+                    data-testid="button-challenge-yes"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!hasJoined) {
+                        onJoin?.({ ...challenge, selectedSide: "no" });
+                      }
+                    }}
+                    disabled={hasJoined}
+                    className={`flex items-center justify-center text-base font-bold rounded-2xl px-8 py-2 flex-1 transition-opacity ${
+                      hasJoined
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
+                        : 'text-red-600 dark:text-red-400 bg-red-500/15 dark:bg-red-500/20 hover:opacity-80'
+                    }`}
+                    title={hasJoined ? "You have already joined this challenge" : ""}
+                    data-testid="button-challenge-no"
+                  >
+                    No
+                  </button>
+                </>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <div className="flex items-center justify-between gap-1 mb-2">
           <Badge variant="outline" className="flex flex-col items-center py-1 px-3 bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-xl h-auto min-w-[70px] shadow-sm">

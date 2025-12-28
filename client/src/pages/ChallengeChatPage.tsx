@@ -78,6 +78,18 @@ export default function ChallengeChatPage() {
     retry: false,
   });
 
+  const { data: matches = [], refetch: refetchMatches } = useQuery<any[]>({
+    queryKey: [`/api/challenges/${challengeId}/matches`],
+    queryFn: async () => {
+      if (!challengeId) return [];
+      const res = await fetch(`/api/challenges/${challengeId}/matches`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!challengeId,
+    retry: false,
+  });
+
   const { data: activityEvents = [] } = useQuery<ActivityEvent[]>({
     queryKey: [`/api/challenges/${challengeId}/activity`],
     enabled: !!challengeId,
@@ -315,9 +327,36 @@ export default function ChallengeChatPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="matches" className="m-0 p-4 h-full data-[state=inactive]:hidden text-center text-slate-500 py-20">
-              <Users className="w-12 h-12 mb-4 mx-auto opacity-20" />
-              <p>No active matches for this challenge yet.</p>
+            <TabsContent value="matches" className="m-0 p-4 h-full data-[state=inactive]:hidden overflow-y-auto">
+              {(!matches || matches.length === 0) ? (
+                <div className="text-center text-slate-500 py-20">
+                  <Users className="w-12 h-12 mb-4 mx-auto opacity-20" />
+                  <p>No active matches for this challenge yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {matches.map((m: any) => {
+                    const user = m.user;
+                    const matched = m.matchedWithUser;
+                    return (
+                      <div key={m.entry?.id || m.entry?.userId || Math.random()} className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar userId={user?.id} username={user?.username} size={40} />
+                          <div className="flex flex-col">
+                            <div className="font-medium text-sm text-slate-900 dark:text-slate-100">
+                              {user?.firstName || user?.username || 'User'}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Matched with</div>
+                            <div className="font-medium text-sm text-slate-900 dark:text-slate-100">
+                              {matched?.firstName || matched?.username || 'Opponent'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="activity" className="m-0 p-4 h-full data-[state=inactive]:hidden overflow-y-auto">

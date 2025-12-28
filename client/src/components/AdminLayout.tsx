@@ -26,7 +26,8 @@ import {
   ChevronRight,
   AlertTriangle,
   Gift,
-  Wallet
+  Wallet,
+  Lock
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -63,6 +64,12 @@ const adminNavigation = [
     href: "/admin/challenges/disputes", 
     icon: AlertTriangle,
     description: "Review and resolve challenge disputes"
+  },
+  { 
+    name: "Escrow", 
+    href: "/admin/escrow", 
+    icon: Lock,
+    description: "Monitor and manage funds in escrow"
   },
   { 
     name: "Payouts", 

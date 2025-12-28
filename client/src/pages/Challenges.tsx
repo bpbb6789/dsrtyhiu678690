@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import { getGlobalChannel } from "@/lib/pusher";
 import { MobileNavigation } from "@/components/MobileNavigation";
 import { ChallengeCard } from "@/components/ChallengeCard";
@@ -98,6 +99,7 @@ export default function Challenges() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [showChat, setShowChat] = useState(false);
+  const [challengeStatusTab, setChallengeStatusTab] = useState<'all' | 'p2p' | 'open' | 'active' | 'pending' | 'completed' | 'ended'>('all');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [preSelectedUser, setPreSelectedUser] = useState<any>(null);
   const [selectedTab, setSelectedTab] = useState<string>('featured');
@@ -279,7 +281,21 @@ export default function Challenges() {
     const matchesCategory =
       selectedCategory === "all" || challenge.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
+    // Determine admin-created flag explicitly
+    const isAdminCreated = challenge.adminCreated === true;
+
+    // Filter by challenge status or P2P tab
+    const matchesStatus =
+      challengeStatusTab === 'all' ? true :
+      challengeStatusTab === 'p2p' ? !isAdminCreated :
+      challengeStatusTab === 'open' ? challenge.status === 'open' :
+      challengeStatusTab === 'active' ? challenge.status === 'active' :
+      challengeStatusTab === 'pending' ? challenge.status === 'pending' :
+      challengeStatusTab === 'completed' ? challenge.status === 'completed' :
+      challengeStatusTab === 'ended' ? (challenge.status === 'completed' || challenge.status === 'cancelled' || challenge.status === 'disputed') :
+      true;
+
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const filteredUsers = (allUsers as any[]).filter((u: any) => {
@@ -435,7 +451,7 @@ export default function Challenges() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 theme-transition pb-[50px]">
-      <div className="max-w-7xl mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-3 md:py-8">
+      <div className="max-w-7xl mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-2 md:py-4">
         <CategoryBar
           categories={categories}
           selectedCategory={selectedCategory}
@@ -448,7 +464,20 @@ export default function Challenges() {
           }}
         />
 
-        <div className="mt-6">
+        {/* Challenge Status Tabs */}
+        <Tabs defaultValue="all" value={challengeStatusTab} onValueChange={setChallengeStatusTab} className="space-y-2">
+          <TabsList className="grid w-fit grid-cols-7 h-7 border-0 shadow-none bg-transparent gap-0.5 mx-auto">
+            <TabsTrigger value="all" className="text-xs px-1.5 py-1">All</TabsTrigger>
+            <TabsTrigger value="p2p" className="text-xs px-1.5 py-1">P2P</TabsTrigger>
+            <TabsTrigger value="open" className="text-xs px-1.5 py-1">Open</TabsTrigger>
+            <TabsTrigger value="active" className="text-xs px-1.5 py-1">Active</TabsTrigger>
+            <TabsTrigger value="pending" className="text-xs px-1.5 py-1">Pending</TabsTrigger>
+            <TabsTrigger value="completed" className="text-xs px-1.5 py-1">Completed</TabsTrigger>
+            <TabsTrigger value="ended" className="text-xs px-1.5 py-1">Ended</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="mt-4">
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
               {[...Array(6)].map((_, i) => (
@@ -542,41 +571,69 @@ export default function Challenges() {
                   <FormField
                     control={form.control}
                     name="challenged"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-xs font-medium hidden sm:block">
-                          Challenge Friend
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-8 rounded-lg text-sm bg-transparent border-none focus:ring-0">
-                              <SelectValue placeholder="Select a friend" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="z-[80] border-none shadow-none" position="popper">
-                            {(friends as any[]).map((friend: any) => {
-                              const friendUser =
-                                friend.requesterId === user?.id
-                                  ? friend.addressee
-                                  : friend.requester;
-                              return (
-                                <SelectItem
-                                  key={friendUser.id}
-                                  value={friendUser.id}
-                                >
-                                  {friendUser.firstName ||
-                                    friendUser.username}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      // Deduplicate friend list by user id to avoid repeating entries
+                      const uniqueMap = new Map<string, any>();
+                      (friends as any[] || []).forEach((friend: any) => {
+                        const friendUser =
+                          friend.requesterId === user?.id
+                            ? friend.addressee
+                            : friend.requester;
+                        if (friendUser && friendUser.id && !uniqueMap.has(friendUser.id)) {
+                          uniqueMap.set(friendUser.id, friendUser);
+                        }
+                      });
+                      const uniqueFriendUsers = Array.from(uniqueMap.values());
+
+                      return (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="sr-only">
+                            Challenge Friend
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="h-10 rounded-lg text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary/50 transition-colors">
+                                <SelectValue placeholder="👥 Select a friend to challenge" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="z-[80] border-0 shadow-md bg-white dark:bg-slate-800 rounded-lg">
+                              {uniqueFriendUsers.length === 0 ? (
+                                <div className="p-4 text-center text-sm text-slate-500">
+                                  <p>No friends yet</p>
+                                  <p className="text-xs mt-1">Go to Friends tab to add friends</p>
+                                </div>
+                              ) : (
+                                uniqueFriendUsers.map((friendUser: any) => (
+                                  <SelectItem
+                                    key={friendUser.id}
+                                    value={friendUser.id}
+                                    className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 py-2 border-0 outline-none"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                        {(friendUser.firstName?.[0] || friendUser.username?.[0] || "U").toUpperCase()}
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium text-sm">
+                                          {friendUser.firstName || friendUser.username}
+                                        </span>
+                                        <span className="text-xs text-slate-500">
+                                          @{friendUser.username || 'user'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                 )}
 
@@ -609,7 +666,7 @@ export default function Challenges() {
                   name="title"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="text-xs font-medium hidden sm:block">
+                      <FormLabel className="sr-only">
                         Challenge Title
                       </FormLabel>
                       <FormControl>
@@ -629,7 +686,7 @@ export default function Challenges() {
                   name="description"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="text-xs font-medium hidden sm:block">
+                      <FormLabel className="sr-only">
                         Description (Optional)
                       </FormLabel>
                       <FormControl>
@@ -651,7 +708,7 @@ export default function Challenges() {
                     name="category"
                     render={({ field }) => (
                       <FormItem className="space-y-1">
-                        <FormLabel className="text-xs font-medium hidden sm:block">
+                        <FormLabel className="sr-only">
                           Category
                         </FormLabel>
                         <Select
@@ -687,9 +744,9 @@ export default function Challenges() {
                     name="amount"
                     render={({ field }) => (
                       <FormItem className="space-y-1">
-                        <FormLabel className="text-xs font-medium hidden sm:block">
-                          Stake (₦)
-                        </FormLabel>
+                        <FormLabel className="sr-only">
+                            Stake (₦)
+                          </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -708,7 +765,7 @@ export default function Challenges() {
                     name="dueDate"
                     render={({ field }) => (
                       <FormItem className="space-y-1 col-span-2 sm:col-span-1">
-                        <FormLabel className="text-xs font-medium hidden sm:block">
+                        <FormLabel className="sr-only">
                           End Date
                         </FormLabel>
                         <FormControl>
