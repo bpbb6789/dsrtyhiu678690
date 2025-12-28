@@ -18,10 +18,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FriendsPerformanceComparison } from "@/components/FriendsPerformanceComparison";
 import { ChallengePreviewCard } from "@/components/ChallengePreviewCard";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { toast } from "@/hooks/use-toast";
+import { MobileNavigation } from "@/components/MobileNavigation";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -322,7 +322,7 @@ const createChallengeSchema = z.object({
   const filteredUsersFinal = filteredUsers;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 theme-transition pb-[50px]">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 theme-transition pb-[80px] md:pb-0">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header - spacing reduced after removing intro text */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
@@ -389,14 +389,12 @@ const createChallengeSchema = z.object({
 
         {/* Friends Tabs */}
         <Tabs defaultValue="friends" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">Friends ({acceptedFriends.length})</TabsTrigger>
             <TabsTrigger value="users">Users ({filteredUsers.length})</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="requests">
               <div className="flex flex-col leading-tight">
                 <span className="text-sm">Requests ({pendingRequests.length})</span>
-                <span className="text-sm text-slate-500">Sent ({sentRequests.length})</span>
               </div>
             </TabsTrigger>
           </TabsList>
@@ -507,9 +505,7 @@ const createChallengeSchema = z.object({
             ))}
           </TabsContent>
 
-          <TabsContent value="performance" className="space-y-4">
-            <FriendsPerformanceComparison />
-          </TabsContent>
+          
 
           <TabsContent value="requests" className="space-y-4">
             {pendingRequests.length === 0 ? (
@@ -855,6 +851,7 @@ const createChallengeSchema = z.object({
           </Form>
         </DialogContent>
       </Dialog>
+      <MobileNavigation />
     </div>
   );
 }

@@ -30,8 +30,8 @@ import { useToast } from "@/hooks/use-toast";
 
 function ActivityCardSkeleton() {
   return (
-    <Card className="mb-2 hover:shadow-md transition-shadow mobile-compact-card animate-pulse">
-      <CardContent className="p-2.5">
+    <Card className="mb-1 hover:shadow-sm transition-shadow mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700 animate-pulse">
+      <CardContent className="p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2.5 flex-1">
             <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
@@ -253,8 +253,8 @@ export default function History() {
   });
 
   const ActivityCard = ({ activity }: { activity: any }) => (
-    <Card className="mb-2 hover:shadow-md transition-shadow mobile-compact-card">
-      <CardContent className="p-2.5">
+      <Card className="mb-1 hover:shadow-sm transition-shadow mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+        <CardContent className="p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2.5 flex-1">
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
@@ -336,8 +336,8 @@ export default function History() {
   );
 
   const TransactionCard = ({ transaction }: { transaction: any }) => (
-    <Card className="mb-2 hover:shadow-md transition-shadow mobile-compact-card">
-      <CardContent className="p-2.5">
+      <Card className="mb-1 hover:shadow-sm transition-shadow mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+        <CardContent className="p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
@@ -420,8 +420,8 @@ export default function History() {
                   <ActivityCardSkeleton />
                 </>
               ) : createdActivities.length === 0 ? (
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 mobile-compact-card">
-                  <CardContent className="text-center py-8">
+                <Card className="bg-white dark:bg-slate-800 mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+                  <CardContent className="text-center py-6">
                     <i className="fas fa-star text-3xl mb-3" style={{ color: '#7440ff' }}></i>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       No created activities yet
@@ -449,8 +449,8 @@ export default function History() {
                   <ActivityCardSkeleton />
                 </>
               ) : participatedChallenges.filter(c => c.status === "active" || c.status === "live").length === 0 ? (
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 mobile-compact-card">
-                  <CardContent className="text-center py-8">
+                <Card className="bg-white dark:bg-slate-800 mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+                  <CardContent className="text-center py-6">
                     <i className="fas fa-clock text-3xl mb-3" style={{ color: '#7440ff' }}></i>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       No active activities
@@ -478,8 +478,8 @@ export default function History() {
                   <ActivityCardSkeleton />
                 </>
               ) : participatedChallenges.length === 0 ? (
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 mobile-compact-card">
-                  <CardContent className="text-center py-8">
+                <Card className="bg-white dark:bg-slate-800 mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+                  <CardContent className="text-center py-6">
                     <i className="fas fa-comments text-3xl mb-3" style={{ color: '#7440ff' }}></i>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       No discussions available
@@ -501,8 +501,8 @@ export default function History() {
 
             <TabsContent value="won" className="space-y-2">
               {wonActivities.length === 0 ? (
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 mobile-compact-card">
-                  <CardContent className="text-center py-8">
+                <Card className="bg-white dark:bg-slate-800 mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+                  <CardContent className="text-center py-6">
                     <i className="fas fa-trophy text-3xl mb-3" style={{ color: '#7440ff' }}></i>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       No winnings yet
@@ -524,8 +524,8 @@ export default function History() {
 
             <TabsContent value="lost" className="space-y-2">
               {lostActivities.length === 0 ? (
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 mobile-compact-card">
-                  <CardContent className="text-center py-8">
+                <Card className="bg-white dark:bg-slate-800 mobile-compact-card border-0 md:border md:border-slate-200 md:dark:border-slate-700">
+                  <CardContent className="text-center py-6">
                     <i className="fas fa-exclamation-triangle text-3xl mb-3" style={{ color: '#7440ff' }}></i>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       No losses recorded
