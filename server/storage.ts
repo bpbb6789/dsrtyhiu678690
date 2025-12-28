@@ -1816,21 +1816,6 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
 
-    // Check if a notification already exists for this friend request to avoid duplicates
-    const [existingNotif] = await this.db
-      .select()
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.userId, addresseeId),
-          eq(notifications.type, "friend_request"),
-          sql`${notifications.data}->>'requesterId' = ${requesterId}`,
-          eq(notifications.read, false)
-        )
-      )
-      .limit(1);
-
-    if (!existingNotif) {
       // Create notification for the addressee
       const requester = await this.getUser(requesterId);
       await this.createNotification({
@@ -1845,7 +1830,6 @@ export class DatabaseStorage implements IStorage {
         fomoLevel: "medium",
         priority: 2,
       } as any);
-    }
 
     return request;
   }
@@ -3961,7 +3945,7 @@ export class DatabaseStorage implements IStorage {
   async markNotificationRead(id: string): Promise<Notification> {
     const [updated] = await this.db
       .update(notifications)
-      .set({ isRead: true })
+      .set({ read: true })
       .where(eq(notifications.id, id))
       .returning();
     return updated;

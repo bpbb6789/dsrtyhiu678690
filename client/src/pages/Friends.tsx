@@ -490,7 +490,7 @@ const createChallengeSchema = z.object({
                         }}
                         disabled={pendingFriendId === user.id}
                       >
-                        {pendingFriendId === user.id ? "Adding..." : "Add Friend"}
+                        {pendingFriendId === user.id ? "Sending..." : "Add Friend"}
                       </Button>
                       <Button
                         size="sm"

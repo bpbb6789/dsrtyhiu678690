@@ -44,6 +44,13 @@ export function MobileNavigation({
       tourId: "challenges",
     },
     {
+      path: "/friends",
+      iconPath: "/assets/avatar/bantah-guys-avatar 1.png",
+      label: "Friends",
+      isActive: location.startsWith("/friends"),
+      tourId: "friends",
+    },
+    {
       path: "create",
       iconPath: "/assets/create.png",
       label: "Create",

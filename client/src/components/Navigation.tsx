@@ -266,16 +266,7 @@ export function Navigation() {
                         <SmartSearch placeholder="Search events, challenges, users..." />
                       )}
 
-                      {/* Mobile challenges search icon - shown when on Challenges page */}
-                      {location.startsWith("/challenges") && (
-                        <button
-                          onClick={() => window.dispatchEvent(new CustomEvent("open-challenges-search"))}
-                          className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
-                          aria-label="Search challenges"
-                        >
-                          <Search className="w-5 h-5" />
-                        </button>
-                      )}
+                      {/* Search handled by SmartSearch on home/challenges */}
 
                   {/* Leaderboard Icon - Always visible on mobile */}
                   <button
